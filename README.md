@@ -2,22 +2,30 @@
 
 一个简单的 Microsoft Edge / Chrome 扩展。打开 YouTube 视频页面后，点击扩展图标一次，就会下载当前视频的封面图。
 
+扩展不会爬取 YouTube 页面，也不会额外请求视频详情接口。文件名来自浏览器当前标签页已经显示的标题。
+
 下载后的文件会保存到浏览器默认下载目录里的 `video_cover` 文件夹：
 
 ```text
-Downloads\video_cover\VIDEO_ID.jpg
+Downloads\video_cover\视频标题.jpg
 ```
 
-例如视频链接里有：
+例如当前标签页标题是：
 
 ```text
-v=XxvANTF-19g
+Example Video Title - YouTube
 ```
 
 下载结果就是：
 
 ```text
-Downloads\video_cover\XxvANTF-19g.jpg
+Downloads\video_cover\Example Video Title.jpg
+```
+
+如果浏览器没有提供可用标题，扩展会退回使用视频 ID 作为文件名：
+
+```text
+Downloads\video_cover\VIDEO_ID.jpg
 ```
 
 扩展会优先尝试下载最高分辨率封面：
@@ -73,9 +81,11 @@ D:\study\codex-project\youtube-thumbnail-edge
 这个扩展使用的下载路径是：
 
 ```text
-video_cover/VIDEO_ID.jpg
+video_cover/视频标题.jpg
 ```
 
 所以浏览器会自动在默认下载目录下创建 `video_cover` 文件夹。
 
 如果你想让图片出现在别的位置，可以在浏览器的下载设置里修改默认下载目录。
+
+如果 Chrome 开启了“下载前询问每个文件的保存位置”，浏览器会优先让用户手动选择保存位置。

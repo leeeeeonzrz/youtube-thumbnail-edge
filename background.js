@@ -32,7 +32,7 @@ chrome.action.onClicked.addListener(async (tab) => {
       return;
     }
 
-    await downloadCover(videoId);
+    await downloadCover(videoId, tab.title || "");
     await showBadge("OK", "#188038");
   } catch (error) {
     await showBadge("ERR", "#d93025");
@@ -70,11 +70,11 @@ function isLikelyVideoId(value) {
   return /^[a-zA-Z0-9_-]{6,}$/.test(value || "");
 }
 
-async function downloadCover(videoId) {
+async function downloadCover(videoId, rawTitle) {
   const maxresUrl = MAXRES_TEMPLATE.replace("{id}", videoId);
   const fallbackUrl = FALLBACK_TEMPLATE.replace("{id}", videoId);
   const coverUrl = await imageExists(maxresUrl) ? maxresUrl : fallbackUrl;
-  const filename = `video_cover/${videoId}.jpg`;
+  const filename = `video_cover/${buildCoverFilename(rawTitle, videoId)}.jpg`;
 
   pendingFilenamesByUrl.set(coverUrl, filename);
 
@@ -88,6 +88,30 @@ async function downloadCover(videoId) {
   } finally {
     setTimeout(() => pendingFilenamesByUrl.delete(coverUrl), 30000);
   }
+}
+
+function buildCoverFilename(rawTitle, fallbackId) {
+  const title = (rawTitle || "")
+    .replace(/\s+-\s+YouTube(?:\s+Music)?$/i, "")
+    .trim();
+
+  const safeTitle = sanitizeFilename(title);
+  return safeTitle || fallbackId;
+}
+
+function sanitizeFilename(value) {
+  const filename = value
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/[. ]+$/g, "")
+    .trim()
+    .slice(0, 160);
+
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(filename)) {
+    return `${filename}_`;
+  }
+
+  return filename;
 }
 
 async function imageExists(url) {
