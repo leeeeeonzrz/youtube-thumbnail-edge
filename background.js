@@ -32,7 +32,8 @@ chrome.action.onClicked.addListener(async (tab) => {
       return;
     }
 
-    await downloadCover(videoId, tab.title || "");
+    const title = await getCurrentPageTitle(tab.id, tab.title || "");
+    await downloadCover(videoId, title);
     await showBadge("OK", "#188038");
   } catch (error) {
     await showBadge("ERR", "#d93025");
@@ -68,6 +69,41 @@ function extractYouTubeVideoId(rawUrl) {
 
 function isLikelyVideoId(value) {
   return /^[a-zA-Z0-9_-]{6,}$/.test(value || "");
+}
+
+async function getCurrentPageTitle(tabId, fallbackTitle) {
+  if (!tabId) return fallbackTitle;
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: readYouTubeTitleFromPage
+    });
+
+    return results?.[0]?.result || fallbackTitle;
+  } catch {
+    return fallbackTitle;
+  }
+}
+
+function readYouTubeTitleFromPage() {
+  const selectors = [
+    'meta[property="og:title"]',
+    'meta[name="twitter:title"]',
+    'meta[name="title"]'
+  ];
+
+  for (const selector of selectors) {
+    const content = document.querySelector(selector)?.content?.trim();
+    if (content) return content;
+  }
+
+  const titleElement = document.querySelector(
+    "h1.ytd-watch-metadata yt-formatted-string, h1 yt-formatted-string, h1"
+  );
+  const titleText = titleElement?.textContent?.trim();
+
+  return titleText || document.title || "";
 }
 
 async function downloadCover(videoId, rawTitle) {
