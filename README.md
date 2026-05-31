@@ -2,7 +2,7 @@
 
 一个简单的 Microsoft Edge / Chrome 扩展。打开 YouTube 视频页面后，点击扩展图标一次，就会下载当前视频的封面图。
 
-扩展不会爬取 YouTube 页面，也不会额外请求视频详情接口。文件名来自当前已经打开的 YouTube 页面标题；扩展点击时只读取当前标签页里已有的标题信息。
+文件名会优先来自当前已经打开的 YouTube 页面标题。扩展会先读取当前标签页里已有的标题信息；如果 Chrome 没有成功返回页面标题，会使用 YouTube 的公开 oEmbed 元数据接口获取当前视频标题。它不会爬取网页 HTML。
 
 下载后的文件会保存到浏览器默认下载目录里的 `video_cover` 文件夹：
 
@@ -10,10 +10,10 @@
 Downloads\video_cover\视频标题.jpg
 ```
 
-例如当前标签页标题是：
+例如当前视频标题是：
 
 ```text
-Example Video Title - YouTube
+Example Video Title
 ```
 
 下载结果就是：
@@ -22,7 +22,7 @@ Example Video Title - YouTube
 Downloads\video_cover\Example Video Title.jpg
 ```
 
-如果页面标题读取失败，扩展会退回使用视频 ID 作为文件名：
+如果标题读取失败，扩展会退回使用视频 ID 作为文件名：
 
 ```text
 Downloads\video_cover\VIDEO_ID.jpg

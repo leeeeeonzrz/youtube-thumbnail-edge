@@ -32,7 +32,12 @@ chrome.action.onClicked.addListener(async (tab) => {
       return;
     }
 
-    const title = await getCurrentPageTitle(tab.id, videoId, tab.title || "");
+    const title =
+      await getCurrentPageTitle(tab.id, videoId) ||
+      await getTitleFromOEmbed(videoId) ||
+      tab.title ||
+      "";
+
     await downloadCover(videoId, title);
     await showBadge("OK", "#188038");
   } catch (error) {
@@ -71,8 +76,8 @@ function isLikelyVideoId(value) {
   return /^[a-zA-Z0-9_-]{6,}$/.test(value || "");
 }
 
-async function getCurrentPageTitle(tabId, videoId, fallbackTitle) {
-  if (!tabId) return fallbackTitle;
+async function getCurrentPageTitle(tabId, videoId) {
+  if (!tabId) return "";
 
   const contentScriptTitle = await requestTitleFromContentScript(tabId, videoId);
   if (contentScriptTitle) return contentScriptTitle;
@@ -95,9 +100,9 @@ async function getCurrentPageTitle(tabId, videoId, fallbackTitle) {
       func: readYouTubeTitleFromPage
     });
 
-    return results?.[0]?.result || fallbackTitle;
+    return results?.[0]?.result || "";
   } catch {
-    return fallbackTitle;
+    return "";
   }
 }
 
@@ -132,6 +137,21 @@ function readYouTubeTitleFromPage() {
   const titleText = titleElement?.textContent?.trim();
 
   return titleText || document.title || "";
+}
+
+async function getTitleFromOEmbed(videoId) {
+  try {
+    const videoUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+    const oEmbedUrl = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(videoUrl)}`;
+    const response = await fetch(oEmbedUrl);
+
+    if (!response.ok) return "";
+
+    const metadata = await response.json();
+    return metadata?.title || "";
+  } catch {
+    return "";
+  }
 }
 
 async function downloadCover(videoId, rawTitle) {
