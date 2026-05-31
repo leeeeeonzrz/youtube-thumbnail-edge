@@ -1,5 +1,27 @@
 const MAXRES_TEMPLATE = "https://i.ytimg.com/vi/{id}/maxresdefault.jpg";
 const FALLBACK_TEMPLATE = "https://i.ytimg.com/vi/{id}/hqdefault.jpg";
+const pendingFilenamesByUrl = new Map();
+const pendingDownloadIds = new Set();
+
+chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
+  const downloadUrl = downloadItem.finalUrl || downloadItem.url;
+  const filename = pendingFilenamesByUrl.get(downloadUrl);
+
+  if (!filename) return;
+
+  pendingDownloadIds.add(downloadItem.id);
+  suggest({
+    filename,
+    conflictAction: "uniquify"
+  });
+});
+
+chrome.downloads.onChanged.addListener((delta) => {
+  if (!pendingDownloadIds.has(delta.id)) return;
+  if (!delta.state || !["complete", "interrupted"].includes(delta.state.current)) return;
+
+  pendingDownloadIds.delete(delta.id);
+});
 
 chrome.action.onClicked.addListener(async (tab) => {
   try {
@@ -52,13 +74,20 @@ async function downloadCover(videoId) {
   const maxresUrl = MAXRES_TEMPLATE.replace("{id}", videoId);
   const fallbackUrl = FALLBACK_TEMPLATE.replace("{id}", videoId);
   const coverUrl = await imageExists(maxresUrl) ? maxresUrl : fallbackUrl;
+  const filename = `video_cover/${videoId}.jpg`;
 
-  await chrome.downloads.download({
-    url: coverUrl,
-    filename: `video_cover/${videoId}.jpg`,
-    conflictAction: "uniquify",
-    saveAs: false
-  });
+  pendingFilenamesByUrl.set(coverUrl, filename);
+
+  try {
+    await chrome.downloads.download({
+      url: coverUrl,
+      filename,
+      conflictAction: "uniquify",
+      saveAs: false
+    });
+  } finally {
+    setTimeout(() => pendingFilenamesByUrl.delete(coverUrl), 30000);
+  }
 }
 
 async function imageExists(url) {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Cover Downloader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Click once on a YouTube page to download the current video's cover image.",
   "permissions": [
     "activeTab",
