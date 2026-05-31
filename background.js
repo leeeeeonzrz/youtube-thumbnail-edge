@@ -32,7 +32,7 @@ chrome.action.onClicked.addListener(async (tab) => {
       return;
     }
 
-    const title = await getCurrentPageTitle(tab.id, tab.title || "");
+    const title = await getCurrentPageTitle(tab.id, videoId, tab.title || "");
     await downloadCover(videoId, title);
     await showBadge("OK", "#188038");
   } catch (error) {
@@ -71,8 +71,23 @@ function isLikelyVideoId(value) {
   return /^[a-zA-Z0-9_-]{6,}$/.test(value || "");
 }
 
-async function getCurrentPageTitle(tabId, fallbackTitle) {
+async function getCurrentPageTitle(tabId, videoId, fallbackTitle) {
   if (!tabId) return fallbackTitle;
+
+  const contentScriptTitle = await requestTitleFromContentScript(tabId, videoId);
+  if (contentScriptTitle) return contentScriptTitle;
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content.js"]
+    });
+  } catch {
+    // The declared content script should normally handle this. Dynamic injection is only a fallback.
+  }
+
+  const injectedTitle = await requestTitleFromContentScript(tabId, videoId);
+  if (injectedTitle) return injectedTitle;
 
   try {
     const results = await chrome.scripting.executeScript({
@@ -83,6 +98,19 @@ async function getCurrentPageTitle(tabId, fallbackTitle) {
     return results?.[0]?.result || fallbackTitle;
   } catch {
     return fallbackTitle;
+  }
+}
+
+async function requestTitleFromContentScript(tabId, videoId) {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, {
+      type: "GET_YOUTUBE_TITLE",
+      videoId
+    });
+
+    return response?.title || "";
+  } catch {
+    return "";
   }
 }
 

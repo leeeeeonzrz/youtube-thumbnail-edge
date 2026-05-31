@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Cover Downloader",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Click once on a YouTube page to download the current video's cover image using the video title as the filename.",
   "permissions": [
     "activeTab",
@@ -10,6 +10,20 @@
   ],
   "host_permissions": [
     "https://i.ytimg.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://music.youtube.com/*",
+        "https://youtu.be/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_title": "Download YouTube cover",
